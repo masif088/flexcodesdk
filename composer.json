@@ -1,5 +1,5 @@
 {
-    "name": "idekite/flexcodesdk",
+    "name": "masif088/flexcodesdk",
     "description": ":description",
     "license": "MIT",
     "authors": [
@@ -9,7 +9,7 @@
             "homepage": "https://kata-kutuku.net"
         }
     ],
-    "homepage": "https://github.com/idekite/flexcodesdk",
+    "homepage": "https://github.com/masif088/flexcodesdk",
     "keywords": ["Laravel", "flexcodesdk"],
     "minimum-stability": "stable",
     "require": {
