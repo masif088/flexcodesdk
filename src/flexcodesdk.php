@@ -13,7 +13,6 @@ class flexcodesdk
         $data['verification_code']  =  env('FLEXCODE_VC');
         $data['activation_code']    =  env('FLEXCODE_AC');
         $data['verification_key']   =  env('FLEXCODE_VKEY');
-
         return response()->json($data);
     }
 
@@ -24,9 +23,9 @@ class flexcodesdk
 
     public function getDeviceBySn($sn)
     {
-        $devices = Config::get('flexcodesdk', 'devices');
+        $devices = Config::get('flexcodesdk.devices');
         foreach ($devices as $device) {
-            if($device['sn'] === $sn){
+            if($device['sn'] == $sn){
                 return $device;
             }
         }
@@ -34,30 +33,30 @@ class flexcodesdk
     }
 
     public function decodeRegistrationData($serialized_data)
-    {   
+    {
         @list($vStamp, $sn, $user_id, $regTemp) = explode(";", $serialized_data);
         if( !isset($vStamp) || !isset($sn) || !isset($user_id) || !isset($regTemp)){
             return array();
         }
-        
+
         return array(
             'vStamp'     =>  $vStamp,
             'sn'         =>  $sn,
             'user_id'    =>  $user_id,
             'regTemp'    =>  $regTemp,
         );
-        
+
     }
 
     public function isValidRegistration($user, $data)
     {
-        
+
         if(!empty($user->fingerprints) || $user->id !== $data['user_id']){
             return false;
         }
-        
+
         $device = flexcodesdk::getDeviceBySn($data['sn']);
-        
+
         $salt = md5($device['ac'].$device['vkey'].$data['regTemp'].$data['sn'].$data['user_id']);
         return (strtoupper($data['vStamp']) == strtoupper($salt)) ? true : false;
     }
@@ -78,19 +77,19 @@ class flexcodesdk
             }else{
                 $update['fingerprints'] = $data[3];
                 $user->update($update);
-
                 $result['message'] = 'Fingerprints successfully registered';
                 return $result;
             }
         }
 
-        
+
     }
 
     public function verificationUrl($user, $extra = array())
     {
         $query_string = http_build_query($extra);
-        return $user->id . ";". $user->fingerprints.";SecurityKey;". '15' .";". url('fingerprints/verify/' . $user->id . '?' . $query_string) .";". url('fingerprints/ac');
+        return $user->id . ";". $user->fingerprints.";SecurityKey;". '15' .";". url('fingerprints/verify/' . $user->id . '?' . $query_string) .";". url('fingerprints/ac').";extraParams";
+
     }
 
     public function verify($id, $serialized_data)
@@ -119,7 +118,7 @@ class flexcodesdk
             );
             return $result;
         }
-        
+
         if($user->id != $user_id){
             $message =  'User mismatch';
             $result = array(
@@ -138,12 +137,10 @@ class flexcodesdk
             );
             return $result;
         }
-        
         $fingerData = $user->fingerprints;
         $device     = flexcodesdk::getDeviceBySn($sn);
-            
         $salt = md5($sn.$fingerData.$device['vc'].$time.$user_id.$device['vkey']);
-        
+
         if(strtoupper($vStamp) == strtoupper($salt)){
             $result = array(
                 'verified' => true,
@@ -162,6 +159,13 @@ class flexcodesdk
     public function getRegistrationLink($id)
     {
         return 'finspot:FingerspotReg;' . base64_encode(url('fingerprints/register/' . $id));
+    }
+
+
+    public function getVerificationLink($id, $extras = array('action' => 'login'))
+    {
+        $url = url('fingerprints/verify/' . $id . '?' . http_build_query($extras));
+        return 'finspot:FingerspotVer;' . base64_encode($url);
     }
 
 }
